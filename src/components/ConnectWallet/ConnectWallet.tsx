@@ -67,7 +67,7 @@ const ConnectWallet = () => {
           <Button onClick={openConnectWalletDialog}>Connect Wallet</Button>
           {error != null && (
             <span className="absolute left-0 top-10 text-sm text-redhot-500">
-              {error?.message}
+              {`Consider switch to correct network. ${error?.message}`}
             </span>
           )}
         </div>
