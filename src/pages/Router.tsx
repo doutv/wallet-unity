@@ -16,15 +16,15 @@ export interface RouteConfig {
 export const routes: RouteConfig[] = [
   {
     path: '/',
-    label: 'Transfer',
+    label: 'Profolio',
     component: Send,
     nav: true,
   },
   {
     path: '/redeem',
-    label: 'Redeem',
+    label: 'Receive',
     component: Redeem,
-    nav: false,
+    nav: true,
   },
   {
     path: '/transactions',

@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom'
 
 import classnames from 'classnames'
 
-import logo from 'assets/logo.svg'
 import ConnectWallet from 'components/ConnectWallet/ConnectWallet'
 import { routes } from 'pages/Router'
 
@@ -33,22 +32,27 @@ function NavLink({ route }: NavLinkProps) {
 function Nav() {
   return (
     <nav className="flex w-full flex-row items-center p-6">
-      <Link className="flex flex-row items-center" to="/">
-        <img className="inline h-12" src={logo} alt="logo" />
-        <span className="ml-4 text-2xl font-semibold text-white">
-          Cross-Chain Transfer Protocol
-        </span>
-      </Link>
-
-      <div className="ml-auto">
-        {routes
-          .filter((route) => route.nav)
-          .map((route) => (
-            <NavLink key={route.path} route={route} />
-          ))}
-
-        <ConnectWallet />
+      <div className="flex flex-row items-center justify-start">
+        <Link className="flex items-center" to="/">
+          {/* <img className="inline h-12" src={logo} alt="logo" /> */}
+          <span className="ml-4 text-xl font-semibold text-white">
+            WalletUnity
+          </span>
+        </Link>
+        <div className="ml-12">
+          {routes
+            .filter((route) => route.nav)
+            .map((route) => (
+              <NavLink key={route.path} route={route} />
+            ))}
+        </div>
       </div>
+
+      <div className="flex flex-1 justify-center">
+        <ConnectWallet />
+        {/* <text>search box</text> */}
+      </div>
+      <div className="justify-end" />
     </nav>
   )
 }

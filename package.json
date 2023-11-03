@@ -25,6 +25,7 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "@douyinfe/semi-ui": "^2.46.0",
     "@emotion/react": "^11.10.0",
     "@emotion/styled": "^11.10.0",
     "@mui/icons-material": "^5.8.4",
