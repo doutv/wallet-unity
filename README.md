@@ -1,10 +1,13 @@
-# CCTP Sample App
+# WalletUnity
 
-A sample app used to demonstrate CCTP step by step capabilities on testnet. The app currently supports Ethereum Goerli, Avalanche Fuji C-Chain, and Arbitrum Goerli testnets.
+There are many L2s in the Ethereum ecosystem, and users' wallet assets are scattered on various chains. Currently there is no convenient way to unite/merge multi-chain assets.
 
-![](./docs/screenshot.png)
+WalletUnity is a dapp for multi-chain asset unity(consolidation), where users can conveniently manage multi-chain assets and consolidate multi-chain assets to a specified chain with a single click.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Features
+
+- Display mainstream tokens of the wallet on multiple chains, and calculate the total values in USD.
+- Transfer USDC scattered on multiple chains to the specified chain via Circle CCTP.
 
 # Setup
 
