@@ -9,6 +9,7 @@ import { CHAIN_ICONS } from 'assets/chains'
 import USDCIcon from 'assets/tokens/USDC.svg'
 import SendConfirmationDialog from 'components/Send/SendConfirmationDialog'
 import SendForm, { DEFAULT_FORM_INPUTS } from 'components/Send/SendForm'
+import SwapDialog, { DEFAULT_SWAP_INPUTS } from 'components/Send/SwapDialog'
 import TransactionDialog from 'components/TransactionDialog/TransactionDialog'
 import { Chain, CHAIN_TO_CHAIN_NAME } from 'constants/chains'
 import { TX_HASH_KEY } from 'constants/index'
@@ -22,6 +23,7 @@ import {
 } from 'utils/etherscan'
 
 import type { Web3Provider } from '@ethersproject/providers'
+import type { SwapInputs } from 'components/Send/SwapDialog'
 import type { TransactionInputs } from 'contexts/AppContext'
 
 enum Action {
@@ -83,7 +85,7 @@ function Send() {
       title: 'Action',
       dataIndex: 'action',
       key: 'action',
-      render: (text: Action, record: { fatherChain: Chain }) => {
+      render: (text: Action, record: { token: string; fatherChain: Chain }) => {
         switch (text) {
           case Action.Bridge:
             return (
@@ -98,7 +100,12 @@ function Send() {
             )
           case Action.Swap:
             return (
-              <Button variant="contained" color="info" className="normal-case">
+              <Button
+                variant="contained"
+                color="info"
+                className="normal-case"
+                onClick={() => handleSwap(record.fatherChain, record.token)}
+              >
                 Swap
               </Button>
             )
@@ -109,13 +116,21 @@ function Send() {
     },
   ]
 
-  const handleBrige = (fromChain: Chain) => {
-    console.log('Bridge from Chain ', fromChain)
+  const handleBrige = (srcChain: Chain) => {
     setFormInputs((state) => ({
       ...state,
-      source: fromChain,
+      source: srcChain,
     }))
     setIsSendFormDialogOpen(true)
+  }
+
+  const handleSwap = (srcChain: Chain, srcToken: string) => {
+    setSwapInputs((state) => ({
+      ...state,
+      chain: srcChain,
+      srcToken,
+    }))
+    setIsSwapDialogOpen(true)
   }
 
   const [tokenDatas, setTokenDatas] = useState<TokenData[]>([])
@@ -127,6 +142,8 @@ function Send() {
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] =
     useState(false)
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false)
+  const [isSwapDialogOpen, setIsSwapDialogOpen] = useState(false)
+  const [swapInputs, setSwapInputs] = useState<SwapInputs>(DEFAULT_SWAP_INPUTS)
   const { txHash, transaction, setSearchParams } = useQueryParam()
   const navigate = useNavigate()
 
@@ -295,10 +312,18 @@ function Send() {
             expandAllGroupRows
             dataSource={tokenDatas}
             pagination={false}
-            loading={tokenDatas.length === 0}
+            loading={tokenDatas.length === 0 && address !== ''}
           />
         </div>
       </div>
+
+      {isSwapDialogOpen && (
+        <SwapDialog
+          handleClose={() => setIsSwapDialogOpen(false)}
+          open={isSwapDialogOpen}
+          swapInputs={swapInputs}
+        />
+      )}
 
       {isSendFormDialogOpen && (
         <SendForm
