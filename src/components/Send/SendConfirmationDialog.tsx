@@ -152,11 +152,7 @@ const SendConfirmationDialog: React.FC<Props> = ({
       open={open}
       sx={sx}
     >
-      <DialogTitle>Approve and send transfer</DialogTitle>
-      <DialogContentText className="mx-12">
-        Confirm that you want to send the following amount of USDC from the
-        source address to the destination address shown below.
-      </DialogContentText>
+      <DialogTitle>Confirm and Approve</DialogTitle>
       <DialogContent>
         <TransactionDetails transaction={formInputs} />
 

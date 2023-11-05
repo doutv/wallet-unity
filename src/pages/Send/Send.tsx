@@ -24,39 +24,11 @@ import {
 import type { Web3Provider } from '@ethersproject/providers'
 import type { TransactionInputs } from 'contexts/AppContext'
 
-const columns = [
-  {
-    title: 'Token',
-    dataIndex: 'token',
-    key: 'token',
-    render: (text: string, record: { tokenIcon: string }) => {
-      return (
-        <span>
-          <Avatar className="mr-2 h-8 w-8" src={record.tokenIcon} alt={text} />
-          {text}
-        </span>
-      )
-    },
-  },
-  {
-    title: 'Price',
-    dataIndex: 'price',
-    key: 'price',
-    // width: 200,
-  },
-  {
-    title: 'Amount',
-    dataIndex: 'amount',
-    key: 'amount',
-    // width: 200,
-  },
-  {
-    title: 'USD Value',
-    dataIndex: 'usd',
-    key: 'usd',
-    // width: 200,
-  },
-]
+enum Action {
+  None,
+  Bridge,
+  Swap,
+}
 
 interface TokenData {
   key: string
@@ -65,15 +37,93 @@ interface TokenData {
   price: string
   amount: string
   usd: string
+  action: Action
+  fatherChain: Chain
   children?: TokenData[]
 }
 
 function Send() {
+  const columns = [
+    {
+      title: 'Token',
+      dataIndex: 'token',
+      key: 'token',
+      render: (text: string, record: { tokenIcon: string }) => {
+        return (
+          <span>
+            <Avatar
+              className="mr-2 h-8 w-8"
+              src={record.tokenIcon}
+              alt={text}
+            />
+            {text}
+          </span>
+        )
+      },
+    },
+    {
+      title: 'Price',
+      dataIndex: 'price',
+      key: 'price',
+      // width: 200,
+    },
+    {
+      title: 'Amount',
+      dataIndex: 'amount',
+      key: 'amount',
+      // width: 200,
+    },
+    {
+      title: 'USD Value',
+      dataIndex: 'usd',
+      key: 'usd',
+      // width: 200,
+    },
+    {
+      title: 'Action',
+      dataIndex: 'action',
+      key: 'action',
+      render: (text: Action, record: { fatherChain: Chain }) => {
+        switch (text) {
+          case Action.Bridge:
+            return (
+              <Button
+                variant="contained"
+                color="info"
+                className="normal-case"
+                onClick={() => handleBrige(record.fatherChain)}
+              >
+                Bridge
+              </Button>
+            )
+          case Action.Swap:
+            return (
+              <Button variant="contained" color="info" className="normal-case">
+                Swap
+              </Button>
+            )
+          default:
+            return <></>
+        }
+      },
+    },
+  ]
+
+  const handleBrige = (fromChain: Chain) => {
+    console.log('Bridge from Chain ', fromChain)
+    setFormInputs((state) => ({
+      ...state,
+      source: fromChain,
+    }))
+    setIsSendFormDialogOpen(true)
+  }
+
   const [tokenDatas, setTokenDatas] = useState<TokenData[]>([])
   const [address, setAddress] = useState<string>('')
   const { account, active } = useWeb3React<Web3Provider>()
   const [formInputs, setFormInputs] =
     useState<TransactionInputs>(DEFAULT_FORM_INPUTS)
+  const [isSendFormDialogOpen, setIsSendFormDialogOpen] = useState(false)
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] =
     useState(false)
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false)
@@ -105,6 +155,8 @@ function Send() {
           price: '',
           amount: '',
           usd: `$${totalUSDValue.toFixed(2)}`,
+          action: Action.None,
+          fatherChain: chain as Chain,
           children: [
             {
               key: chain + '1',
@@ -116,6 +168,8 @@ function Send() {
               price: `$${nativePrice.toFixed(2)}`,
               amount: nativeAmount.toFixed(4),
               usd: `$${nativeUSDValue.toFixed(2)}`,
+              action: Action.Swap,
+              fatherChain: chain as Chain,
             },
             {
               key: chain + '2',
@@ -124,6 +178,8 @@ function Send() {
               price: `$${USDCPrice.toFixed(2)}`,
               amount: USDCAmount.toFixed(4),
               usd: `$${USDCUSDValue.toFixed(2)}`,
+              action: Action.Bridge,
+              fatherChain: chain as Chain,
             },
           ],
         })
@@ -242,15 +298,17 @@ function Send() {
             loading={tokenDatas.length === 0}
           />
         </div>
-
-        <div className="m-24 flex flex-col">
-          <SendForm
-            handleNext={handleNext}
-            formInputs={formInputs}
-            handleUpdateForm={setFormInputs}
-          />
-        </div>
       </div>
+
+      {isSendFormDialogOpen && (
+        <SendForm
+          handleClose={() => setIsSendFormDialogOpen(false)}
+          handleNext={handleNext}
+          open={isSendFormDialogOpen}
+          formInputs={formInputs}
+          handleUpdateForm={setFormInputs}
+        />
+      )}
 
       {isConfirmationDialogOpen && (
         <SendConfirmationDialog

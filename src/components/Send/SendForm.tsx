@@ -3,6 +3,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import EastIcon from '@mui/icons-material/East'
 import {
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputAdornment,
   InputLabel,
@@ -60,12 +64,20 @@ export const DEFAULT_FORM_INPUTS: TransactionInputs = {
 }
 
 interface Props {
+  handleClose: () => void
   handleNext: () => void
+  open: boolean
   handleUpdateForm: React.Dispatch<React.SetStateAction<TransactionInputs>>
   formInputs: TransactionInputs
 }
 
-const SendForm = ({ handleNext, handleUpdateForm, formInputs }: Props) => {
+const SendForm = ({
+  handleClose,
+  handleNext,
+  open,
+  handleUpdateForm,
+  formInputs,
+}: Props) => {
   const { account, active, chainId } = useWeb3React<Web3Provider>()
   const USDC_ADDRESS = getUSDCContractAddress(chainId)
 
@@ -163,124 +175,128 @@ const SendForm = ({ handleNext, handleUpdateForm, formInputs }: Props) => {
   }
 
   return (
-    <form className="flex flex-col" onSubmit={handleSubmit}>
-      <NetworkAlert className="-mt-20 mb-8" chain={formInputs.source} />
+    <Dialog maxWidth="md" fullWidth={true} onClose={handleClose} open={open}>
+      <form className="flex flex-col" onSubmit={handleSubmit}>
+        <DialogTitle>Bridge USDC</DialogTitle>
+        <DialogContent className="mt-5">
+          <NetworkAlert className="mb-8" chain={formInputs.source} />
 
-      <div className="-mx-6 flex items-center justify-between">
-        <FormControl className="mx-6" fullWidth>
-          <InputLabel id="source">Source</InputLabel>
-          <Select
-            id="source"
-            label="Source"
-            error={
-              account !== null &&
-              active &&
-              CHAIN_TO_CHAIN_ID[source] !== chainId
-            }
-            value={source}
-            onChange={(event) => handleSourceChange(event.target.value)}
-          >
-            {CHAIN_SELECT_ITEMS.map((chain) => renderChainMenuItem(chain))}
-          </Select>
-        </FormControl>
+          <div className="-mx-6 mt-4 flex items-center justify-between">
+            <FormControl className="mx-6" fullWidth>
+              <InputLabel id="source">Source</InputLabel>
+              <Select
+                id="source"
+                label="Source"
+                error={
+                  account !== null &&
+                  active &&
+                  CHAIN_TO_CHAIN_ID[source] !== chainId
+                }
+                value={source}
+                onChange={(event) => handleSourceChange(event.target.value)}
+              >
+                {CHAIN_SELECT_ITEMS.map((chain) => renderChainMenuItem(chain))}
+              </Select>
+            </FormControl>
 
-        <EastIcon className="text-gumdrop-200" sx={{ fontSize: 40 }} />
+            <EastIcon className="text-gumdrop-200" sx={{ fontSize: 40 }} />
 
-        <FormControl className="mx-6" fullWidth>
-          <InputLabel id="target">Destination</InputLabel>
-          <Select
-            id="target"
-            label="Destination"
-            value={target}
-            onChange={(event) =>
-              handleUpdateForm((state) => ({
-                ...state,
-                target: event.target.value,
-              }))
-            }
-          >
-            {CHAIN_SELECT_ITEMS.map((chain) =>
-              renderChainMenuItem(chain, source)
-            )}
-          </Select>
-        </FormControl>
-      </div>
+            <FormControl className="mx-6" fullWidth>
+              <InputLabel id="target">Destination</InputLabel>
+              <Select
+                id="target"
+                label="Destination"
+                value={target}
+                onChange={(event) =>
+                  handleUpdateForm((state) => ({
+                    ...state,
+                    target: event.target.value,
+                  }))
+                }
+              >
+                {CHAIN_SELECT_ITEMS.map((chain) =>
+                  renderChainMenuItem(chain, source)
+                )}
+              </Select>
+            </FormControl>
+          </div>
 
-      <FormControl className="mt-12" fullWidth>
-        <TextField
-          id="address"
-          label="Destination Address"
-          variant="outlined"
-          value={address}
-          error={address !== '' && address !== account}
-          helperText={getAddressHelperText}
-          onChange={(event) =>
-            handleUpdateForm((state) => ({
-              ...state,
-              address: event.target.value,
-            }))
-          }
-          InputLabelProps={{ shrink: true }}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <Button
-                  color="secondary"
-                  onClick={handleCopyFromWallet}
-                  disabled={!account || !active}
-                >
-                  COPY FROM WALLET
-                </Button>
-              </InputAdornment>
-            ),
-          }}
-        />
-      </FormControl>
+          <FormControl className="mt-12" fullWidth>
+            <TextField
+              id="address"
+              label="Destination Address"
+              variant="outlined"
+              value={address}
+              error={address !== '' && address !== account}
+              helperText={getAddressHelperText}
+              onChange={(event) =>
+                handleUpdateForm((state) => ({
+                  ...state,
+                  address: event.target.value,
+                }))
+              }
+              InputLabelProps={{ shrink: true }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Button
+                      color="secondary"
+                      onClick={handleCopyFromWallet}
+                      disabled={!account || !active}
+                    >
+                      COPY FROM WALLET
+                    </Button>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </FormControl>
 
-      <FormControl className="mt-6" fullWidth>
-        <TextField
-          id="amount"
-          label="Amount"
-          variant="outlined"
-          type="number"
-          error={
-            amount !== '' &&
-            (isNaN(+amount) || +amount <= 0 || +amount > walletUSDCBalance)
-          }
-          helperText={getAmountHelperText}
-          value={amount}
-          onChange={(event) =>
-            handleUpdateForm((state) => ({
-              ...state,
-              amount: event.target.value,
-            }))
-          }
-          InputLabelProps={{ shrink: true }}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <Button
-                  color="secondary"
-                  onClick={handleAddMax}
-                  disabled={walletUSDCBalance === 0}
-                >
-                  ADD MAX
-                </Button>
-              </InputAdornment>
-            ),
-          }}
-        />
-      </FormControl>
-
-      <Button
-        className="mt-12"
-        type="submit"
-        size="large"
-        disabled={!isFormValid}
-      >
-        NEXT
-      </Button>
-    </form>
+          <FormControl className="mt-6" fullWidth>
+            <TextField
+              id="amount"
+              label="Amount"
+              variant="outlined"
+              type="number"
+              error={
+                amount !== '' &&
+                (isNaN(+amount) || +amount <= 0 || +amount > walletUSDCBalance)
+              }
+              helperText={getAmountHelperText}
+              value={amount}
+              onChange={(event) =>
+                handleUpdateForm((state) => ({
+                  ...state,
+                  amount: event.target.value,
+                }))
+              }
+              InputLabelProps={{ shrink: true }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Button
+                      color="secondary"
+                      onClick={handleAddMax}
+                      disabled={walletUSDCBalance === 0}
+                    >
+                      ADD MAX
+                    </Button>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </FormControl>
+        </DialogContent>
+        <DialogActions className="mt-8">
+          <Button size="large" color="secondary" onClick={handleClose}>
+            BACK
+          </Button>
+          <Button type="submit" size="large" disabled={!isFormValid}>
+            NEXT
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
   )
 }
 
