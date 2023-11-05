@@ -12,10 +12,9 @@ interface Props {
 const RedeemComplete: React.FC<Props> = ({ handleReturn, transaction }) => {
   return (
     <>
-      <h1>Transfer completed</h1>
+      <h1>Bridge completed</h1>
       <p className="mt-8 text-center text-xl">
-        Your transfer of USDC across chains was successful. See below for
-        details.
+        Your bridge of USDC across chains was successful. See below for details.
       </p>
 
       <div className="m-24 flex flex-col">
@@ -27,7 +26,7 @@ const RedeemComplete: React.FC<Props> = ({ handleReturn, transaction }) => {
           fullWidth={true}
           onClick={handleReturn}
         >
-          Start a new transfer
+          Start a new bridge
         </Button>
       </div>
     </>

@@ -8,9 +8,7 @@ describe('Nav', () => {
   it('has all the links', () => {
     render(<Nav />)
 
-    const transferLink = screen.getAllByText(
-      /Transfer/i
-    )[1] as HTMLAnchorElement
-    expect(transferLink.href).toContain('/')
+    const bridgeLink = screen.getAllByText(/Bridge/i)[1] as HTMLAnchorElement
+    expect(bridgeLink.href).toContain('/')
   })
 })

@@ -116,7 +116,7 @@ function Redeem() {
                   size="large"
                   fullWidth={true}
                 >
-                  RETURN TO TRANSFER
+                  RETURN TO BRIDGE
                 </Button>
               </Link>
             </div>
