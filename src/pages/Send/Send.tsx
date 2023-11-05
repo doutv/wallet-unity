@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createSearchParams, useNavigate } from 'react-router-dom'
 
 import { Avatar, Table } from '@douyinfe/semi-ui'
+import { Button, InputAdornment, TextField } from '@mui/material'
 import { useWeb3React } from '@web3-react/core'
 
 import { CHAIN_ICONS } from 'assets/chains'
@@ -30,10 +31,10 @@ const columns = [
     key: 'token',
     render: (text: string, record: { tokenIcon: string }) => {
       return (
-        <div>
+        <span>
           <Avatar className="mr-2 h-8 w-8" src={record.tokenIcon} alt={text} />
           {text}
-        </div>
+        </span>
       )
     },
   },
@@ -69,7 +70,8 @@ interface TokenData {
 
 function Send() {
   const [tokenDatas, setTokenDatas] = useState<TokenData[]>([])
-  const { account } = useWeb3React<Web3Provider>()
+  const [address, setAddress] = useState<string>('')
+  const { account, active } = useWeb3React<Web3Provider>()
   const [formInputs, setFormInputs] =
     useState<TransactionInputs>(DEFAULT_FORM_INPUTS)
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] =
@@ -80,7 +82,7 @@ function Send() {
 
   useEffect(() => {
     const getTokenDatas = async () => {
-      if (!account) {
+      if (!address) {
         return
       }
       const newTokenDatas: TokenData[] = []
@@ -88,12 +90,12 @@ function Send() {
         const nativeToken = chain === Chain.AVAX ? 'AVAX' : 'ETH'
         const nativeAmount = await getNativeAmountByChain(
           chain as Chain,
-          account
+          address
         )
         const nativePrice = await getNativeTokenPrice(chain as Chain)
         const nativeUSDValue = nativeAmount * nativePrice
         const USDCPrice = 1
-        const USDCAmount = await getUSDCAmountByChain(chain as Chain, account)
+        const USDCAmount = await getUSDCAmountByChain(chain as Chain, address)
         const USDCUSDValue = USDCAmount * USDCPrice
         const totalUSDValue = nativeUSDValue + USDCUSDValue
         newTokenDatas.push({
@@ -130,7 +132,7 @@ function Send() {
     }
 
     getTokenDatas().catch(console.error)
-  }, [account])
+  }, [address])
 
   useEffect(() => {
     // Redirect to Redeem page if send tx is complete and signature is fetched or it's a redeem tx
@@ -179,6 +181,18 @@ function Send() {
 
   const { handleSendTransactionPolling } = useTransactionPolling(handleComplete)
 
+  const getSumUSDValue = (tokenDatas: TokenData[]) => {
+    let sum = 0
+    tokenDatas.forEach((tokenData) => {
+      sum += parseFloat(tokenData.usd.replace('$', ''))
+    })
+    return `$${sum.toFixed(2)}`
+  }
+
+  useEffect(() => {
+    setAddress(account as string)
+  }, [account])
+
   return (
     <>
       <div className="item-center mx-auto flex max-w-4xl flex-col justify-center">
@@ -187,15 +201,47 @@ function Send() {
           Secured by Circle&apos;s Cross-Chain Transfer Protocol
         </p>
 
-        <Table
-          className="mt-24"
-          columns={columns}
-          expandAllRows
-          expandAllGroupRows
-          dataSource={tokenDatas}
-          pagination={false}
-          loading={tokenDatas.length === 0}
-        />
+        <div className="mt-12 flex flex-col items-center justify-center gap-4">
+          <TextField
+            className="w-full"
+            id="address"
+            label="Wallet Address"
+            variant="outlined"
+            value={address}
+            onChange={(event) => setAddress(event.target.value)}
+            InputLabelProps={{ shrink: true }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Button
+                    color="secondary"
+                    onClick={() => setAddress(account as string)}
+                    disabled={!account || !active}
+                  >
+                    COPY FROM WALLET
+                  </Button>
+                </InputAdornment>
+              ),
+            }}
+          />
+          <TextField
+            className="w-full"
+            id="profolio"
+            label="Profolio in USD Value"
+            variant="outlined"
+            value={getSumUSDValue(tokenDatas)}
+            InputLabelProps={{ shrink: true }}
+            InputProps={{ readOnly: true }}
+          />
+          <Table
+            columns={columns}
+            expandAllRows
+            expandAllGroupRows
+            dataSource={tokenDatas}
+            pagination={false}
+            loading={tokenDatas.length === 0}
+          />
+        </div>
 
         <div className="m-24 flex flex-col">
           <SendForm
