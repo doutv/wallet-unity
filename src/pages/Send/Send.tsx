@@ -149,6 +149,10 @@ function Send() {
           case Action.Swap:
             return (
               <Button
+                disabled={
+                  // Uniswap Widget does not support Arbitrum Goerli and Avalanche Fuji
+                  record.chain === Chain.AVAX || record.chain === Chain.ARB
+                }
                 variant="contained"
                 color="info"
                 className="normal-case"
