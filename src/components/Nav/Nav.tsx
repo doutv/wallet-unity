@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom'
 
 import classnames from 'classnames'
 
-import ConnectWallet from 'components/ConnectWallet/ConnectWallet'
 import { routes } from 'pages/Router'
 
 import type { RouteConfig } from 'pages/Router'
@@ -47,12 +46,6 @@ function Nav() {
             ))}
         </div>
       </div>
-
-      <div className="flex flex-1 justify-center">
-        {/* <ConnectWallet /> */}
-        {/* <text>search box</text> */}
-      </div>
-      <div className="justify-end" />
     </nav>
   )
 }

@@ -1,9 +1,17 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-import { Button, Fade, Menu, MenuItem } from '@mui/material'
+import {
+  Button,
+  Dialog,
+  DialogContentText,
+  Fade,
+  Menu,
+  MenuItem,
+} from '@mui/material'
 import { useWeb3React } from '@web3-react/core'
 
 import ConnectWalletDialog from 'components/ConnectWallet/ConnectWalletDialog'
+import { Chain } from 'constants/chains'
 import { useEagerConnect } from 'hooks/useEagerConnect'
 import { getAddressAbbreviation } from 'utils'
 
@@ -15,6 +23,7 @@ const ConnectWallet = () => {
     useWeb3React<Web3Provider>()
   useEagerConnect()
 
+  const [isErrorDiaglogOpen, setIsErrorDialogOpen] = useState(false)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [isConnectWalletDialogOpen, setIsConnectWalletDialogOpen] =
     useState<boolean>(false)
@@ -50,6 +59,11 @@ const ConnectWallet = () => {
     handleMenuClose()
   }, [deactivate, handleMenuClose])
 
+  useEffect(() => {
+    if (error) {
+      setIsErrorDialogOpen(true)
+    }
+  }, [error])
   return (
     <>
       {account && active ? (
@@ -65,10 +79,23 @@ const ConnectWallet = () => {
       ) : (
         <div className="relative inline">
           <Button onClick={openConnectWalletDialog}>Connect Wallet</Button>
-          {error != null && (
-            <span className="absolute left-0 top-10 text-sm text-redhot-500">
-              {`Consider switch to correct network. ${error?.message}`}
-            </span>
+          {error != null && isErrorDiaglogOpen && (
+            <Dialog
+              maxWidth="md"
+              open={isErrorDiaglogOpen}
+              onClose={() => setIsErrorDialogOpen(false)}
+            >
+              <DialogContentText className="p-8">
+                {'Consider switch to correct network.' +
+                  '\n' +
+                  `${error?.message}\n` +
+                  `Supported Test Networks:
+                  ${Object.values(Chain)
+                    .map((chain) => chain)
+                    .join(', ')}
+                `}
+              </DialogContentText>
+            </Dialog>
           )}
         </div>
       )}
