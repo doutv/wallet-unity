@@ -40,8 +40,55 @@ interface TokenData {
   amount: string
   usd: string
   action: Action
-  fatherChain: Chain
+  chain: Chain
   children?: TokenData[]
+}
+
+const getTokenData = async (chain: Chain, address: string) => {
+  const nativeToken = chain === Chain.AVAX ? 'AVAX' : 'ETH'
+  const nativeAmount = await getNativeAmountByChain(chain, address)
+  const nativePrice = await getNativeTokenPrice(chain)
+  const nativeUSDValue = nativeAmount * nativePrice
+  const USDCPrice = 1
+  const USDCAmount = await getUSDCAmountByChain(chain, address)
+  const USDCUSDValue = USDCAmount * USDCPrice
+  const totalUSDValue = nativeUSDValue + USDCUSDValue
+
+  return {
+    key: chain,
+    token: CHAIN_TO_CHAIN_NAME[chain],
+    tokenIcon: CHAIN_ICONS[chain],
+    price: '',
+    amount: '',
+    usd: `$${totalUSDValue.toFixed(2)}`,
+    action: Action.None,
+    chain,
+    children: [
+      {
+        key: chain + '1',
+        token: nativeToken,
+        tokenIcon:
+          chain === Chain.AVAX
+            ? CHAIN_ICONS[Chain.AVAX]
+            : CHAIN_ICONS[Chain.ETH],
+        price: `$${nativePrice.toFixed(2)}`,
+        amount: nativeAmount.toFixed(4),
+        usd: `$${nativeUSDValue.toFixed(2)}`,
+        action: Action.Swap,
+        chain,
+      },
+      {
+        key: chain + '2',
+        token: 'USDC',
+        tokenIcon: USDCIcon,
+        price: `$${USDCPrice.toFixed(2)}`,
+        amount: USDCAmount.toFixed(4),
+        usd: `$${USDCUSDValue.toFixed(2)}`,
+        action: Action.Bridge,
+        chain,
+      },
+    ],
+  }
 }
 
 function Send() {
@@ -85,7 +132,7 @@ function Send() {
       title: 'Action',
       dataIndex: 'action',
       key: 'action',
-      render: (text: Action, record: { token: string; fatherChain: Chain }) => {
+      render: (text: Action, record: { token: string; chain: Chain }) => {
         switch (text) {
           case Action.Bridge:
             return (
@@ -93,7 +140,7 @@ function Send() {
                 variant="contained"
                 color="info"
                 className="normal-case"
-                onClick={() => handleBrige(record.fatherChain)}
+                onClick={() => handleBrige(record.chain)}
               >
                 Bridge
               </Button>
@@ -104,7 +151,7 @@ function Send() {
                 variant="contained"
                 color="info"
                 className="normal-case"
-                onClick={() => handleSwap(record.fatherChain, record.token)}
+                onClick={() => handleSwap(record.chain, record.token)}
               >
                 Swap
               </Button>
@@ -120,6 +167,7 @@ function Send() {
     setFormInputs((state) => ({
       ...state,
       source: srcChain,
+      address,
     }))
     setIsSendFormDialogOpen(true)
   }
@@ -152,56 +200,10 @@ function Send() {
       if (!address) {
         return
       }
-      const newTokenDatas: TokenData[] = []
-      for (const chain in Chain) {
-        const nativeToken = chain === Chain.AVAX ? 'AVAX' : 'ETH'
-        const nativeAmount = await getNativeAmountByChain(
-          chain as Chain,
-          address
-        )
-        const nativePrice = await getNativeTokenPrice(chain as Chain)
-        const nativeUSDValue = nativeAmount * nativePrice
-        const USDCPrice = 1
-        const USDCAmount = await getUSDCAmountByChain(chain as Chain, address)
-        const USDCUSDValue = USDCAmount * USDCPrice
-        const totalUSDValue = nativeUSDValue + USDCUSDValue
-        newTokenDatas.push({
-          key: chain,
-          token: CHAIN_TO_CHAIN_NAME[chain],
-          tokenIcon: CHAIN_ICONS[chain as Chain],
-          price: '',
-          amount: '',
-          usd: `$${totalUSDValue.toFixed(2)}`,
-          action: Action.None,
-          fatherChain: chain as Chain,
-          children: [
-            {
-              key: chain + '1',
-              token: nativeToken,
-              tokenIcon:
-                chain === Chain.AVAX
-                  ? CHAIN_ICONS[Chain.AVAX]
-                  : CHAIN_ICONS[Chain.ETH],
-              price: `$${nativePrice.toFixed(2)}`,
-              amount: nativeAmount.toFixed(4),
-              usd: `$${nativeUSDValue.toFixed(2)}`,
-              action: Action.Swap,
-              fatherChain: chain as Chain,
-            },
-            {
-              key: chain + '2',
-              token: 'USDC',
-              tokenIcon: USDCIcon,
-              price: `$${USDCPrice.toFixed(2)}`,
-              amount: USDCAmount.toFixed(4),
-              usd: `$${USDCUSDValue.toFixed(2)}`,
-              action: Action.Bridge,
-              fatherChain: chain as Chain,
-            },
-          ],
-        })
-      }
-      setTokenDatas(newTokenDatas)
+      const newTokenDatas: Array<Promise<TokenData>> = Object.values(Chain).map(
+        async (chain) => await getTokenData(chain, address)
+      )
+      setTokenDatas(await Promise.all(newTokenDatas))
     }
 
     getTokenDatas().catch(console.error)
