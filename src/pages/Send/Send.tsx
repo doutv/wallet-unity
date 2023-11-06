@@ -316,6 +316,7 @@ function Send() {
             InputProps={{ readOnly: true }}
           />
           <Table
+            className="semi-always-dark"
             columns={columns}
             expandAllRows
             expandAllGroupRows
