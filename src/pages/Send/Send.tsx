@@ -7,6 +7,7 @@ import { useWeb3React } from '@web3-react/core'
 
 import { CHAIN_ICONS } from 'assets/chains'
 import USDCIcon from 'assets/tokens/USDC.svg'
+import ConnectWallet from 'components/ConnectWallet/ConnectWallet'
 import SendConfirmationDialog from 'components/Send/SendConfirmationDialog'
 import SendForm, { DEFAULT_FORM_INPUTS } from 'components/Send/SendForm'
 import SwapDialog, { DEFAULT_SWAP_INPUTS } from 'components/Send/SwapDialog'
@@ -195,18 +196,19 @@ function Send() {
   const { txHash, transaction, setSearchParams } = useQueryParam()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const getTokenDatas = async () => {
-      if (!address) {
-        return
-      }
-      const newTokenDatas: Array<Promise<TokenData>> = Object.values(Chain).map(
-        async (chain) => await getTokenData(chain, address)
-      )
-      setTokenDatas(await Promise.all(newTokenDatas))
+  // Fetch token datas from API
+  const fetchTokenDatas = async (address: string) => {
+    if (!address) {
+      return
     }
+    const newTokenDatas: Array<Promise<TokenData>> = Object.values(Chain).map(
+      async (chain) => await getTokenData(chain, address)
+    )
+    setTokenDatas(await Promise.all(newTokenDatas))
+  }
 
-    getTokenDatas().catch(console.error)
+  useEffect(() => {
+    fetchTokenDatas(address).catch(console.error)
   }, [address])
 
   useEffect(() => {
@@ -270,13 +272,15 @@ function Send() {
 
   return (
     <>
-      <div className="item-center mx-auto flex max-w-4xl flex-col justify-center">
+      <div className="item-center mx-auto flex max-w-4xl flex-col justify-center gap-6">
         <h1>Unite your multichain assets</h1>
-        <p className="mt-8 text-center text-xl">
+        <p className="text-center text-xl">
           Secured by Circle&apos;s Cross-Chain Transfer Protocol
         </p>
-
-        <div className="mt-12 flex flex-col items-center justify-center gap-4">
+        <div className="flex justify-center">
+          <ConnectWallet />
+        </div>
+        <div className="flex flex-col items-center justify-center gap-4">
           <TextField
             className="w-full"
             id="address"
@@ -321,7 +325,10 @@ function Send() {
 
       {isSwapDialogOpen && (
         <SwapDialog
-          handleClose={() => setIsSwapDialogOpen(false)}
+          handleClose={() => {
+            setIsSwapDialogOpen(false)
+            fetchTokenDatas(address).catch(console.error)
+          }}
           open={isSwapDialogOpen}
           swapInputs={swapInputs}
         />

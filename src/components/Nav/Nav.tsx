@@ -35,7 +35,7 @@ function Nav() {
       <div className="flex flex-row items-center justify-start">
         <Link className="flex items-center" to="/">
           {/* <img className="inline h-12" src={logo} alt="logo" /> */}
-          <span className="ml-4 text-xl font-semibold text-white">
+          <span className="ml-4 text-2xl font-bold text-white">
             WalletUnity
           </span>
         </Link>
@@ -49,7 +49,7 @@ function Nav() {
       </div>
 
       <div className="flex flex-1 justify-center">
-        <ConnectWallet />
+        {/* <ConnectWallet /> */}
         {/* <text>search box</text> */}
       </div>
       <div className="justify-end" />
