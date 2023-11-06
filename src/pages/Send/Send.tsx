@@ -187,6 +187,7 @@ function Send() {
   const { account, active } = useWeb3React<Web3Provider>()
   const [formInputs, setFormInputs] =
     useState<TransactionInputs>(DEFAULT_FORM_INPUTS)
+  const [isLoading, setIsLoading] = useState(false)
   const [isSendFormDialogOpen, setIsSendFormDialogOpen] = useState(false)
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] =
     useState(false)
@@ -201,10 +202,12 @@ function Send() {
     if (!address) {
       return
     }
+    setIsLoading(true)
     const newTokenDatas: Array<Promise<TokenData>> = Object.values(Chain).map(
       async (chain) => await getTokenData(chain, address)
     )
     setTokenDatas(await Promise.all(newTokenDatas))
+    setIsLoading(false)
   }
 
   useEffect(() => {
@@ -318,7 +321,7 @@ function Send() {
             expandAllGroupRows
             dataSource={tokenDatas}
             pagination={false}
-            loading={tokenDatas.length === 0 && address !== ''}
+            loading={isLoading}
           />
         </div>
       </div>
