@@ -3,9 +3,9 @@
  */
 export enum Chain {
   ETH = 'ETH',
+  OP = 'OP',
   AVAX = 'AVAX',
   ARB = 'ARB',
-  OP = 'OP',
 }
 
 /**
