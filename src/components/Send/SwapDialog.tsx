@@ -12,21 +12,29 @@ import { useWeb3React } from '@web3-react/core'
 
 import NetworkAlert from 'components/NetworkAlert/NetworkAlert'
 import { Chain, CHAIN_TO_CHAIN_ID, CHAIN_TO_CHAIN_NAME } from 'constants/chains'
+import {
+  getTokenAddress,
+  isNativeToken,
+  isTokenExist,
+  NATIVE_TOKEN_ADDRESS,
+  Token,
+  TOKEN_TO_DECIMALS,
+  TOKEN_TO_LOGOURI,
+} from 'constants/tokens'
 import useSwitchNetwork from 'hooks/useSwitchNetwork'
-import { getUSDCContractAddress } from 'utils/addresses'
 
 import type { Web3Provider } from '@ethersproject/providers'
 import type { DefaultAddress, TokenInfo } from '@uniswap/widgets'
 
 export interface SwapInputs {
-  srcToken: string
-  destToken: string
+  srcToken: Token
+  destToken: Token
   chain: Chain
 }
 
 export const DEFAULT_SWAP_INPUTS: SwapInputs = {
-  srcToken: 'ETH',
-  destToken: 'USDC',
+  srcToken: Token.ETH,
+  destToken: Token.USDC,
   chain: Chain.ETH,
 }
 
@@ -36,14 +44,13 @@ interface Props {
   swapInputs: SwapInputs
 }
 
-const NATIVE = 'NATIVE' // Special address for native token
-
 const SwapDialog = ({ handleClose, open, swapInputs }: Props) => {
   const { library, chainId } = useWeb3React<Web3Provider>()
   const { switchNetwork } = useSwitchNetwork(swapInputs.chain)
-  const [tokenList, setTokenList] = useState<TokenInfo[]>()
-  const [defaultOutputTokenAddress, setDefaultOutputTokenAddress] =
-    useState<DefaultAddress>()
+  const [tokenList, setTokenList] = useState<TokenInfo[]>([])
+  const [defaultOutputTokenAddress] = useState<DefaultAddress>(
+    getTokenAddress(swapInputs.chain, Token.USDC)
+  )
 
   useEffect(() => {
     if (chainId != null && CHAIN_TO_CHAIN_ID[swapInputs.chain] !== chainId) {
@@ -52,22 +59,26 @@ const SwapDialog = ({ handleClose, open, swapInputs }: Props) => {
   }, [chainId, swapInputs.chain, switchNetwork])
 
   useEffect(() => {
-    const inputChainId = CHAIN_TO_CHAIN_ID[swapInputs.chain]
-    setTokenList([
-      {
-        name: 'USD Coin',
-        address: getUSDCContractAddress(inputChainId),
-        symbol: 'USDC',
-        decimals: 6,
-        chainId: inputChainId,
-        logoURI:
-          'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
-      },
-    ])
-    setDefaultOutputTokenAddress(() => ({
-      inputChainId: getUSDCContractAddress(inputChainId),
-    }))
-  }, [swapInputs.chain])
+    const chainId = CHAIN_TO_CHAIN_ID[swapInputs.chain]
+    setTokenList(
+      Object.values(Token)
+        .filter(
+          (token) =>
+            isTokenExist(swapInputs.chain, token) &&
+            !isNativeToken(swapInputs.chain, token)
+        )
+        .map((token) => {
+          return {
+            name: token,
+            address: getTokenAddress(swapInputs.chain, token),
+            symbol: token,
+            decimals: TOKEN_TO_DECIMALS[token],
+            chainId,
+            logoURI: TOKEN_TO_LOGOURI[token],
+          }
+        })
+    )
+  }, [swapInputs])
 
   return (
     <Dialog maxWidth="md" fullWidth={true} onClose={handleClose} open={open}>
@@ -82,7 +93,7 @@ const SwapDialog = ({ handleClose, open, swapInputs }: Props) => {
           <SwapWidget
             provider={library}
             width="100%"
-            defaultInputTokenAddress={NATIVE}
+            defaultInputTokenAddress={NATIVE_TOKEN_ADDRESS}
             defaultOutputTokenAddress={defaultOutputTokenAddress}
             tokenList={tokenList}
           />

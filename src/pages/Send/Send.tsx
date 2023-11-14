@@ -6,7 +6,6 @@ import { Button, InputAdornment, TextField } from '@mui/material'
 import { useWeb3React } from '@web3-react/core'
 
 import { CHAIN_ICONS } from 'assets/chains'
-import USDCIcon from 'assets/tokens/USDC.svg'
 import ConnectWallet from 'components/ConnectWallet/ConnectWallet'
 import SendConfirmationDialog from 'components/Send/SendConfirmationDialog'
 import SendForm, { DEFAULT_FORM_INPUTS } from 'components/Send/SendForm'
@@ -14,14 +13,16 @@ import SwapDialog, { DEFAULT_SWAP_INPUTS } from 'components/Send/SwapDialog'
 import TransactionDialog from 'components/TransactionDialog/TransactionDialog'
 import { Chain, CHAIN_TO_CHAIN_NAME } from 'constants/chains'
 import { TX_HASH_KEY } from 'constants/index'
+import {
+  CHAIN_TO_TOKEN_TO_ADDRESS,
+  EMPTY_TOKEN_ADDRESS,
+  Token,
+  TOKEN_ICONS,
+} from 'constants/tokens'
 import { TransactionStatus, TransactionType } from 'contexts/AppContext'
 import { useQueryParam } from 'hooks/useQueryParam'
 import { useTransactionPolling } from 'hooks/useTransactionPolling'
-import {
-  getNativeAmountByChain,
-  getNativeTokenPrice,
-  getUSDCAmountByChain,
-} from 'utils/etherscan'
+import { getTokenAmount, getTokenPrice } from 'utils/etherscan'
 
 import type { Web3Provider } from '@ethersproject/providers'
 import type { SwapInputs } from 'components/Send/SwapDialog'
@@ -35,7 +36,7 @@ enum Action {
 
 interface TokenData {
   key: string
-  token: string
+  token: Token | string
   tokenIcon: string
   price: string
   amount: string
@@ -45,50 +46,45 @@ interface TokenData {
   children?: TokenData[]
 }
 
-const getTokenData = async (chain: Chain, address: string) => {
-  const nativeToken = chain === Chain.AVAX ? 'AVAX' : 'ETH'
-  const nativeAmount = await getNativeAmountByChain(chain, address)
-  const nativePrice = await getNativeTokenPrice(chain)
-  const nativeUSDValue = nativeAmount * nativePrice
-  const USDCPrice = 1
-  const USDCAmount = await getUSDCAmountByChain(chain, address)
-  const USDCUSDValue = USDCAmount * USDCPrice
-  const totalUSDValue = nativeUSDValue + USDCUSDValue
+const getSumUSDValue = (tokenDatas: TokenData[]) => {
+  let sum = 0
+  tokenDatas.forEach((tokenData) => {
+    sum += parseFloat(tokenData.usd.replace('$', ''))
+  })
+  return `$${sum.toFixed(2)}`
+}
 
+const getChainData = async (chain: Chain, address: string) => {
+  const tokensPromises: Array<Promise<TokenData>> = Object.values(Token)
+    .filter(
+      (token) => CHAIN_TO_TOKEN_TO_ADDRESS[chain][token] !== EMPTY_TOKEN_ADDRESS
+    )
+    .map(async (token) => {
+      const price = await getTokenPrice(token)
+      const amount = await getTokenAmount(token, chain, address)
+      const usd = price * amount
+      return {
+        key: chain + token,
+        token,
+        tokenIcon: TOKEN_ICONS[token],
+        price: `$${price.toFixed(2)}`,
+        amount: amount.toFixed(4),
+        usd: `$${usd.toFixed(2)}`,
+        action: token === Token.USDC ? Action.Bridge : Action.Swap,
+        chain,
+      }
+    })
+  const tokens = await Promise.all(tokensPromises)
   return {
     key: chain,
     token: CHAIN_TO_CHAIN_NAME[chain],
     tokenIcon: CHAIN_ICONS[chain],
     price: '',
     amount: '',
-    usd: `$${totalUSDValue.toFixed(2)}`,
+    usd: getSumUSDValue(tokens),
     action: Action.None,
     chain,
-    children: [
-      {
-        key: chain + '1',
-        token: nativeToken,
-        tokenIcon:
-          chain === Chain.AVAX
-            ? CHAIN_ICONS[Chain.AVAX]
-            : CHAIN_ICONS[Chain.ETH],
-        price: `$${nativePrice.toFixed(2)}`,
-        amount: nativeAmount.toFixed(4),
-        usd: `$${nativeUSDValue.toFixed(2)}`,
-        action: Action.Swap,
-        chain,
-      },
-      {
-        key: chain + '2',
-        token: 'USDC',
-        tokenIcon: USDCIcon,
-        price: `$${USDCPrice.toFixed(2)}`,
-        amount: USDCAmount.toFixed(4),
-        usd: `$${USDCUSDValue.toFixed(2)}`,
-        action: Action.Bridge,
-        chain,
-      },
-    ],
+    children: tokens,
   }
 }
 
@@ -98,7 +94,7 @@ function Send() {
       title: 'Token',
       dataIndex: 'token',
       key: 'token',
-      render: (text: string, record: { tokenIcon: string }) => {
+      render: (text: Token | string, record: { tokenIcon: string }) => {
         return (
           <span>
             <Avatar
@@ -133,7 +129,10 @@ function Send() {
       title: 'Action',
       dataIndex: 'action',
       key: 'action',
-      render: (text: Action, record: { token: string; chain: Chain }) => {
+      render: (
+        text: Action,
+        record: { token: Token | string; chain: Chain }
+      ) => {
         switch (text) {
           case Action.Bridge:
             return (
@@ -156,7 +155,7 @@ function Send() {
                 variant="contained"
                 color="info"
                 className="normal-case"
-                onClick={() => handleSwap(record.chain, record.token)}
+                onClick={() => handleSwap(record.chain, record.token as Token)}
               >
                 Swap
               </Button>
@@ -177,7 +176,7 @@ function Send() {
     setIsSendFormDialogOpen(true)
   }
 
-  const handleSwap = (srcChain: Chain, srcToken: string) => {
+  const handleSwap = (srcChain: Chain, srcToken: Token) => {
     setSwapInputs((state) => ({
       ...state,
       chain: srcChain,
@@ -208,7 +207,7 @@ function Send() {
     }
     setIsLoading(true)
     const newTokenDatas: Array<Promise<TokenData>> = Object.values(Chain).map(
-      async (chain) => await getTokenData(chain, address)
+      async (chain) => await getChainData(chain, address)
     )
     setTokenDatas(await Promise.all(newTokenDatas))
     setIsLoading(false)
@@ -264,14 +263,6 @@ function Send() {
   }
 
   const { handleSendTransactionPolling } = useTransactionPolling(handleComplete)
-
-  const getSumUSDValue = (tokenDatas: TokenData[]) => {
-    let sum = 0
-    tokenDatas.forEach((tokenData) => {
-      sum += parseFloat(tokenData.usd.replace('$', ''))
-    })
-    return `$${sum.toFixed(2)}`
-  }
 
   useEffect(() => {
     setAddress(account as string)

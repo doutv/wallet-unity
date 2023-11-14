@@ -1,19 +1,25 @@
 import axios from 'axios'
 
-import { Chain, CHAIN_TO_CHAIN_ID } from 'constants/chains'
-import { DEFAULT_DECIMALS } from 'constants/tokens'
+import { Chain } from 'constants/chains'
+import {
+  CHAIN_TO_TOKEN_TO_ADDRESS,
+  Token,
+  TOKEN_TO_DECIMALS,
+} from 'constants/tokens'
 
-import { getUSDCContractAddress } from './addresses'
-
-const CHAIN_TO_BASEURL = {
-  ETH: 'https://api-goerli.etherscan.io/api',
-  OP: 'https://api-goerli-optimism.etherscan.io/api',
-  AVAX: 'https://api-testnet.snowtrace.io/api',
-  ARB: 'https://api-goerli.arbiscan.io/api',
+const CHAIN_TO_APIBASEURL = {
+  [Chain.ETH]: 'https://api-goerli.etherscan.io/api',
+  [Chain.OP]: 'https://api-goerli-optimism.etherscan.io/api',
+  [Chain.AVAX]: 'https://api-testnet.snowtrace.io/api',
+  [Chain.ARB]: 'https://api-goerli.arbiscan.io/api',
 }
 
-const AVAX_APIKEY = 'BKM47ENB892CKB17SQQDYN2YDRRAYZYB19'
-const ETH_APIKEY = '8W3HDGND7RDTY566QPV1ERJR69BU6DS6JP'
+const CHAIN_TO_APIKEY = {
+  [Chain.ETH]: '8W3HDGND7RDTY566QPV1ERJR69BU6DS6JP',
+  [Chain.OP]: '8W3HDGND7RDTY566QPV1ERJR69BU6DS6JP',
+  [Chain.ARB]: '8W3HDGND7RDTY566QPV1ERJR69BU6DS6JP',
+  [Chain.AVAX]: 'BKM47ENB892CKB17SQQDYN2YDRRAYZYB19',
+}
 
 interface EtherscanResponse {
   status: string
@@ -21,20 +27,20 @@ interface EtherscanResponse {
   result: string
 }
 
-export async function getUSDCAmountByChain(
+export async function getERC20AmountByChain(
+  token: Token,
   chain: Chain,
   account: string
 ): Promise<number> {
-  const chainID = CHAIN_TO_CHAIN_ID[chain]
-  const USDCAddress = getUSDCContractAddress(chainID)
-  const baseURL = CHAIN_TO_BASEURL[chain]
+  const tokenAddress = CHAIN_TO_TOKEN_TO_ADDRESS[chain][token]
+  const baseURL = CHAIN_TO_APIBASEURL[chain]
   const params = {
     module: 'account',
     action: 'tokenbalance',
-    contractaddress: USDCAddress,
+    contractaddress: tokenAddress,
     address: account,
     tag: 'latest',
-    apikey: chain === Chain.AVAX ? AVAX_APIKEY : ETH_APIKEY,
+    apikey: CHAIN_TO_APIKEY[chain],
   }
   try {
     const res = await axios.get<EtherscanResponse>(baseURL, { params })
@@ -42,7 +48,7 @@ export async function getUSDCAmountByChain(
       console.error(chain, account, res.data)
       return 0
     }
-    return parseInt(res.data.result, 10) / 10 ** DEFAULT_DECIMALS
+    return parseInt(res.data.result, 10) / 10 ** TOKEN_TO_DECIMALS[token]
   } catch (error) {
     console.error(error)
     return 0
@@ -53,17 +59,17 @@ function weiToEther(wei: string): number {
   return parseInt(wei, 10) / 10 ** 18
 }
 
-export async function getNativeAmountByChain(
+export async function getNativeTokenAmountByChain(
   chain: Chain,
   account: string
 ): Promise<number> {
-  const baseURL = CHAIN_TO_BASEURL[chain]
+  const baseURL = CHAIN_TO_APIBASEURL[chain]
   const params = {
     module: 'account',
     action: 'balance',
     address: account,
     tag: 'latest',
-    apikey: chain === Chain.AVAX ? AVAX_APIKEY : ETH_APIKEY,
+    apikey: CHAIN_TO_APIKEY[chain],
   }
   try {
     const res = await axios.get<EtherscanResponse>(baseURL, { params })
@@ -84,11 +90,16 @@ interface TokenPriceResponse {
   }
 }
 
-export async function getNativeTokenPrice(chain: Chain) {
-  const url =
-    chain === Chain.AVAX
-      ? 'https://api.coincap.io/v2/assets/avalanche'
-      : 'https://api.coincap.io/v2/assets/ethereum'
+const TOKEN_TO_PRICEAPI = {
+  [Token.ETH]: 'https://api.coincap.io/v2/assets/ethereum',
+  [Token.AVAX]: 'https://api.coincap.io/v2/assets/avalanche',
+  [Token.UNI]: 'https://api.coincap.io/v2/assets/uniswap',
+  [Token.USDC]: 'https://api.coincap.io/v2/assets/usd-coin',
+  [Token.USDT]: 'https://api.coincap.io/v2/assets/tether',
+}
+
+export async function getTokenPrice(token: Token) {
+  const url = TOKEN_TO_PRICEAPI[token]
   try {
     const res = await axios.get<TokenPriceResponse>(url)
     return parseFloat(res.data.data.priceUsd)
@@ -96,4 +107,15 @@ export async function getNativeTokenPrice(chain: Chain) {
     console.error(error)
     return 0
   }
+}
+
+export async function getTokenAmount(
+  token: Token,
+  chain: Chain,
+  account: string
+) {
+  if (token === Token.ETH || token === Token.AVAX) {
+    return await getNativeTokenAmountByChain(chain, account)
+  }
+  return await getERC20AmountByChain(token, chain, account)
 }
