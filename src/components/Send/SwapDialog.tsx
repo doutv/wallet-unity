@@ -86,7 +86,7 @@ const SwapDialog = ({ handleClose, open, swapInputs }: Props) => {
         Swap {swapInputs.srcToken} for {swapInputs.destToken} on{' '}
         {CHAIN_TO_CHAIN_NAME[swapInputs.chain]}
       </DialogTitle>
-      <DialogContent className="flex flex-col items-center justify-center gap-8">
+      <div className="flex flex-col items-center justify-center gap-8">
         {chainId != null && CHAIN_TO_CHAIN_ID[swapInputs.chain] !== chainId ? (
           <NetworkAlert className="w-full" chain={swapInputs.chain} />
         ) : (
@@ -98,7 +98,7 @@ const SwapDialog = ({ handleClose, open, swapInputs }: Props) => {
             tokenList={tokenList}
           />
         )}
-      </DialogContent>
+      </div>
       <DialogActions>
         <Button size="large" color="secondary" onClick={handleClose}>
           BACK
