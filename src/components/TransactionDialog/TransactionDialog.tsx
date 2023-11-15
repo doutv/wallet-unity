@@ -60,7 +60,7 @@ const TransactionDialog: React.FC<Props> = ({
       sx={sx}
       classes={{ paper: styles.aurora }}
     >
-      <DialogTitle className="text-7xl">bridgering...</DialogTitle>
+      <DialogTitle className="text-7xl">bridging...</DialogTitle>
       <DialogContentText className="text-xl">
         Please do not close your browser window. This may take a few minutes to
         complete.
