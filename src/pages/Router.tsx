@@ -47,7 +47,7 @@ function AppRoutes() {
 
 function Router() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={window.location.pathname}>
       <AppLayout>
         <AppRoutes />
       </AppLayout>

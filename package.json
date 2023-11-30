@@ -5,6 +5,7 @@
   "author": "Circle",
   "license": "MIT",
   "private": true,
+  "homepage": ".",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
